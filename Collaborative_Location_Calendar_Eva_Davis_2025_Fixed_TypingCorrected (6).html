@@ -1,0 +1,116 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Collaborative Location Calendar - Eva Davis</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+  .toolbar { padding: 10px; background: #f0f0f0; text-align: center; }
+  .toolbar button, .toolbar input[type="color"] { margin: 0 5px; }
+  .tabs { display: flex; flex-wrap: wrap; background: #333; }
+  .tabs button { background: #333; color: white; padding: 10px; border: none; cursor: pointer; }
+  .tabs button.active { background: #666; }
+  .month { display: none; padding: 20px; }
+  table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+  th, td { border: 1px solid #ccc; vertical-align: top; height: 100px; position: relative; }
+  th { background: #eee; }
+  .day-number { position: absolute; top: 2px; left: 4px; font-weight: bold; font-size: 12px; }
+  .day-content { position: absolute; top: 20px; left: 4px; right: 4px; bottom: 4px; overflow-y: auto; }
+  .day-content[contenteditable="true"] { outline: none; }
+</style>
+</head>
+<body>
+<div class="toolbar">
+  <button onclick="format('bold')"><b>B</b></button>
+  <button onclick="format('italic')"><i>I</i></button>
+  <button onclick="format('underline')"><u>U</u></button>
+  <input type="color" id="colorPicker" onchange="format('foreColor', this.value)">
+</div>
+<div class="tabs" id="tabs"></div>
+<div id="calendar"></div>
+<script>
+function format(command, value = null) {
+  document.execCommand(command, false, value);
+}
+function showMonth(index) {
+  document.querySelectorAll('.month').forEach((el, i) => {
+    el.style.display = i === index ? 'block' : 'none';
+    document.querySelectorAll('.tabs button')[i].classList.toggle('active', i === index);
+  });
+}
+function applyColorCoding(el) {
+  const colorMap = {
+    'LA': 'orange',
+    'Park City': 'green',
+    'New York': 'navy',
+    'Charlotte': 'royalblue',
+    'Durham': 'royalblue',
+    'San Francisco': 'purple',
+    'London': 'red',
+    'Houston': 'yellow',
+    'Washington DC': 'pink',
+    'Dallas': 'lightgreen',
+    'Miami': 'lightblue'
+  };
+  let html = el.innerHTML;
+  for (const [word, color] of Object.entries(colorMap)) {
+    const regex = new RegExp(`(${word})`, 'gi');
+    html = html.replace(regex, `<span style="color:${color}">$1</span>`);
+  }
+  el.innerHTML = html;
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const months = [...Array(12).keys()].map(i => new Date(2025, i, 1));
+  const tabs = document.getElementById('tabs');
+  const calendar = document.getElementById('calendar');
+  months.forEach((date, idx) => {
+    const monthName = date.toLocaleString('default', { month: 'long' });
+    const tab = document.createElement('button');
+    tab.textContent = monthName;
+    tab.onclick = () => showMonth(idx);
+    tabs.appendChild(tab);
+
+    const monthDiv = document.createElement('div');
+    monthDiv.className = 'month';
+    const table = document.createElement('table');
+    const header = document.createElement('tr');
+    ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d => {
+      const th = document.createElement('th');
+      th.textContent = d;
+      header.appendChild(th);
+    });
+    table.appendChild(header);
+
+    const firstDay = new Date(2025, idx, 1);
+    const lastDay = new Date(2025, idx + 1, 0);
+    let current = new Date(firstDay);
+    current.setDate(current.getDate() - current.getDay());
+    while (current <= lastDay || current.getDay() !== 0) {
+      const row = document.createElement('tr');
+      for (let i = 0; i < 7; i++) {
+        const cell = document.createElement('td');
+        if (current.getMonth() === idx) {
+          const dayNum = document.createElement('div');
+          dayNum.className = 'day-number';
+          dayNum.textContent = current.getDate();
+          const content = document.createElement('div');
+          content.className = 'day-content';
+          content.contentEditable = true;
+          content.onblur = () => applyColorCoding(content);
+          cell.appendChild(dayNum);
+          cell.appendChild(content);
+        }
+        row.appendChild(cell);
+        current.setDate(current.getDate() + 1);
+      }
+      table.appendChild(row);
+    }
+    monthDiv.appendChild(table);
+    calendar.appendChild(monthDiv);
+  });
+  showMonth(0);
+});
+</script>
+</body>
+</html>
